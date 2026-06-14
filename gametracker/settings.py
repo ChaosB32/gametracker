@@ -10,7 +10,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'chave-local-insegura')
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['Renato32.pythonanywhere.com', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
