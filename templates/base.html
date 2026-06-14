@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="html-root">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>{% block title %}GameTracker{% endblock %}</title>
+
+  <!-- PWA / Mobile standalone -->
+  <link rel="manifest" href="/static/manifest.json"/>
+  <meta name="theme-color" content="#7c3aed" media="(prefers-color-scheme: light)"/>
+  <meta name="theme-color" content="#0a0a14" media="(prefers-color-scheme: dark)"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="GameTracker"/>
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png"/>
+  <link rel="apple-touch-startup-image" href="/static/icons/icon-512.png"/>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 400:'#a78bfa', 500:'#8b5cf6', 600:'#7c3aed', 700:'#6d28d9' },
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ── CSS Variables (Light & Dark) ───────────────────────── */
+    :root {
+      --bg:          #f4f3ff;
+      --bg2:         #ffffff;
+      --bg3:         #ede9fe;
+      --surface:     #ffffff;
+      --surface2:    #f5f3ff;
+      --border:      #ddd6fe;
+      --border2:     #c4b5fd;
+      --text:        #1e1b4b;
+      --text2:       #4c1d95;
+      --text-muted:  #7c3aed;
+      --text-soft:   #6d28d9;
+      --input-bg:    #f5f3ff;
+      --nav-bg:      rgba(244,243,255,0.92);
+      --card-hover:  #ede9fe;
+      --accent:      #7c3aed;
+      --accent2:     #06b6d4;
+      --grid-color:  rgba(124,58,237,0.06);
+      --shadow:      0 4px 24px rgba(124,58,237,0.10);
+    }
+    .dark {
+      --bg:          #0a0a14;
+      --bg2:         #0f0f1a;
+      --bg3:         #1a0a35;
+      --surface:     #0f0f1a;
+      --surface2:    #14142a;
+      --border:      #2d1060;
+      --border2:     #4c1d95;
+      --text:        #f0ebff;
+      --text2:       #c4b5fd;
+      --text-muted:  #7c3aed;
+      --text-soft:   #a78bfa;
+      --input-bg:    #0f0f1a;
+      --nav-bg:      rgba(10,10,20,0.92);
+      --card-hover:  #1a0a35;
+      --accent:      #7c3aed;
+      --accent2:     #06b6d4;
+      --grid-color:  rgba(124,58,237,0.04);
+      --shadow:      0 4px 24px rgba(0,0,0,0.5);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+    h1,h2,h3,.font-display { font-family: 'Oxanium', sans-serif; }
+
+    /* Grid background */
+    .grid-bg {
+      background-image:
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* Surface card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      box-shadow: var(--shadow);
+      transition: all 0.25s;
+    }
+    .card:hover { border-color: var(--border2); }
+
+    .card-hover-lift:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(124,58,237,0.20); }
+
+    /* Nav */
+    nav.site-nav {
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    /* Inputs */
+    input, select, textarea {
+      background: var(--input-bg) !important;
+      color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent) !important;
+    }
+
+    /* Rating badge */
+    .rating-badge {
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Oxanium', sans-serif;
+      font-weight: 700;
+    }
+
+    /* Status pill */
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 600;
+    }
+
+    /* Glow text */
+    .glow-text { text-shadow: 0 0 20px rgba(124,58,237,0.5); }
+
+    /* Pulse glow */
+    @keyframes pulse-glow {
+      0%,100% { box-shadow: 0 0 8px rgba(124,58,237,0.4); }
+      50%      { box-shadow: 0 0 20px rgba(124,58,237,0.8); }
+    }
+    .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+    /* Float */
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-6px); }
+    }
+    .float { animation: float 3s ease-in-out infinite; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    /* AI content */
+    .ai-content strong { color: var(--accent); }
+    .ai-content { line-height: 1.8; color: var(--text); }
+
+    /* Bottom nav mobile */
+    .bottom-nav {
+      background: var(--nav-bg);
+      border-top: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    /* Safe area padding for phones with notch */
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+    .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+
+    /* Theme toggle */
+    .theme-toggle {
+      width: 40px; height: 22px;
+      background: var(--border2);
+      border-radius: 11px;
+      position: relative; cursor: pointer;
+      transition: background 0.3s;
+    }
+    .theme-toggle.on { background: var(--accent); }
+    .theme-toggle::after {
+      content: ''; position: absolute;
+      width: 16px; height: 16px;
+      background: #fff; border-radius: 50%;
+      top: 3px; left: 3px;
+      transition: transform 0.3s;
+    }
+    .theme-toggle.on::after { transform: translateX(18px); }
+  </style>
+</head>
+
+<body class="grid-bg">
+
+{% if user.is_authenticated %}
+<!-- ── TOP NAV (desktop + mobile header) ──────────────────── -->
+<nav class="site-nav fixed top-0 left-0 right-0 z-50 pt-safe">
+  <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+
+    <!-- Logo -->
+    <a href="{% url 'dashboard' %}" class="flex items-center gap-2 flex-shrink-0">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center pulse-glow flex-shrink-0">
+        <span class="text-white font-bold text-xs font-display">GT</span>
+      </div>
+      <span class="font-display font-bold text-base hidden sm:block" style="color:var(--text)">
+        Game<span style="color:#7c3aed">Tracker</span>
+      </span>
+    </a>
+
+    <!-- Desktop links -->
+    <div class="hidden md:flex items-center gap-6">
+      <a href="{% url 'dashboard' %}" class="text-sm font-medium transition hover:text-violet-500" style="color:var(--text2)">📊 Dashboard</a>
+      <a href="{% url 'game_list' %}" class="text-sm font-medium transition hover:text-violet-500" style="color:var(--text2)">🎮 Biblioteca</a>
+      <a href="{% url 'friends_list' %}" class="text-sm font-medium transition hover:text-violet-500" style="color:var(--text2)">👥 Amigos</a>
+    </div>
+
+    <!-- Right actions -->
+    <div class="flex items-center gap-2">
+      <a href="{% url 'game_create' %}" class="hidden sm:flex items-center gap-1 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-sm">
+        + Adicionar
+      </a>
+
+      <!-- Export buttons desktop -->
+      <div class="hidden md:flex items-center gap-1">
+        <a href="{% url 'export_csv' %}" class="text-xs px-2 py-1 rounded border transition hover:border-violet-500" style="border-color:var(--border);color:var(--text-soft)">CSV</a>
+        <a href="{% url 'export_pdf' %}" class="text-xs px-2 py-1 rounded border transition hover:border-violet-500" style="border-color:var(--border);color:var(--text-soft)">PDF</a>
+      </div>
+
+      <!-- Theme toggle -->
+      <button id="theme-toggle-btn" class="theme-toggle" onclick="toggleTheme()" aria-label="Alternar tema" title="Modo claro/escuro"></button>
+
+      <!-- User + logout desktop -->
+      <div class="hidden md:flex items-center gap-2">
+        <a href="{% url 'my_profile' %}" class="flex items-center gap-1.5 hover:opacity-80 transition">
+          <div class="w-7 h-7 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center flex-shrink-0">
+            <span class="text-white text-xs font-bold">{{ user.username|first|upper }}</span>
+          </div>
+          <span class="text-xs" style="color:var(--text2)">{{ user.username }}</span>
+        </a>
+        <form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}
+          <button type="submit" class="text-xs transition hover:text-red-400" style="color:var(--text-soft)">Sair</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── BOTTOM NAV (mobile only) ───────────────────────────── -->
+<nav class="bottom-nav fixed bottom-0 left-0 right-0 z-50 pb-safe md:hidden">
+  <!-- Row 1: nav principal -->
+  <div class="flex items-center justify-around h-14 border-b" style="border-color:var(--border)">
+    <a href="{% url 'dashboard' %}" class="flex flex-col items-center gap-0.5 px-3 py-2 transition">
+      <span class="text-xl leading-none">📊</span>
+      <span class="text-xs font-medium" style="color:var(--text2)">Dashboard</span>
+    </a>
+    <a href="{% url 'friends_list' %}" class="flex flex-col items-center gap-0.5 px-3 py-2 transition">
+      <span class="text-xl leading-none">👥</span>
+      <span class="text-xs font-medium" style="color:var(--text2)">Amigos</span>
+    </a>
+    <a href="{% url 'game_create' %}" class="flex flex-col items-center gap-0.5">
+      <div class="w-12 h-12 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center shadow-lg -mt-5 pulse-glow">
+        <span class="text-white text-2xl font-bold leading-none">+</span>
+      </div>
+    </a>
+    <a href="{% url 'my_profile' %}" class="flex flex-col items-center gap-0.5 px-3 py-2 transition">
+      <span class="text-xl leading-none">👤</span>
+      <span class="text-xs font-medium" style="color:var(--text2)">Perfil</span>
+    </a>
+    <a href="{% url 'game_list' %}" class="flex flex-col items-center gap-0.5 px-3 py-2 transition">
+      <span class="text-xl leading-none">🎮</span>
+      <span class="text-xs font-medium" style="color:var(--text2)">Biblioteca</span>
+    </a>
+  </div>
+  <!-- Row 2: ações extras -->
+  <div class="flex items-center justify-between px-4 h-10 gap-2">
+    <!-- User info -->
+    <div class="flex items-center gap-1.5 flex-shrink-0">
+      <div class="w-5 h-5 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center flex-shrink-0">
+        <span class="text-white text-xs font-bold" style="font-size:9px">{{ user.username|first|upper }}</span>
+      </div>
+      <span class="text-xs font-medium truncate max-w-[70px]" style="color:var(--text2)">{{ user.username }}</span>
+    </div>
+    <!-- Export + logout -->
+    <div class="flex items-center gap-1.5">
+      <a href="{% url 'export_csv' %}" class="text-xs px-2 py-1 rounded border transition" style="border-color:var(--border);color:var(--text-soft)">CSV</a>
+      <a href="{% url 'export_pdf' %}" class="text-xs px-2 py-1 rounded border transition" style="border-color:var(--border);color:var(--text-soft)">PDF</a>
+      <form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}
+        <button type="submit" class="text-xs px-2 py-1 rounded border transition" style="border-color:var(--border);color:var(--text-soft)">Sair</button>
+      </form>
+    </div>
+  </div>
+</nav>
+{% endif %}
+
+<!-- ── MESSAGES ────────────────────────────────────────────── -->
+{% if messages %}
+<div class="fixed top-16 right-4 z-50 space-y-2" id="messages-container">
+  {% for message in messages %}
+  <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium shadow-lg
+    {% if message.tags == 'success' %}bg-green-100 border border-green-300 text-green-800 dark:bg-green-900/80 dark:border-green-700 dark:text-green-300
+    {% elif message.tags == 'error' %}bg-red-100 border border-red-300 text-red-800 dark:bg-red-900/80 dark:border-red-700 dark:text-red-300
+    {% else %}bg-violet-100 border border-violet-300 text-violet-800 dark:bg-violet-900/80 dark:border-violet-700 dark:text-violet-300{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── MAIN ────────────────────────────────────────────────── -->
+<main class="{% if user.is_authenticated %}pt-14 pb-32 md:pb-6{% endif %} min-h-screen">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── FOOTER (desktop) ───────────────────────────────────── -->
+{% if user.is_authenticated %}
+<footer class="hidden md:block text-center py-4 text-xs border-t" style="border-color:var(--border);color:var(--text-muted)">
+  GameTracker &copy; 2026 — Powered by RAWG & Groq
+</footer>
+{% endif %}
+
+<script>
+// ── Theme ────────────────────────────────────────────────────
+const html = document.getElementById('html-root');
+const btn  = document.getElementById('theme-toggle-btn');
+
+function applyTheme(dark) {
+  if (dark) {
+    html.classList.add('dark');
+    if (btn) btn.classList.add('on');
+  } else {
+    html.classList.remove('dark');
+    if (btn) btn.classList.remove('on');
+  }
+  document.querySelector('meta[name="theme-color"]:not([media*="light"])').content = dark ? '#0a0a14' : '#7c3aed';
+}
+
+function toggleTheme() {
+  const isDark = html.classList.contains('dark');
+  localStorage.setItem('gt-theme', isDark ? 'light' : 'dark');
+  applyTheme(!isDark);
+}
+
+// Init theme: saved preference > system preference
+const saved = localStorage.getItem('gt-theme');
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(saved ? saved === 'dark' : prefersDark);
+
+// ── Messages auto-dismiss ─────────────────────────────────
+setTimeout(() => {
+  const el = document.getElementById('messages-container');
+  if (el) { el.style.transition = 'opacity 0.5s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 500); }
+}, 4000);
+
+// ── PWA Service Worker ────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+}
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

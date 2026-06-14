@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}{% if is_own %}Meu Perfil{% else %}{{ target_user.username }}{% endif %} — GameTracker{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+
+  <!-- Header do perfil -->
+  <div class="card p-6 mb-5">
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+
+      <!-- Avatar -->
+      <div class="flex-shrink-0">
+        {% with u=profile.user %}
+        {% if profile.avatar_url %}
+        <img src="{{ profile.avatar_url }}" alt="{{ u.username }}"
+          class="w-24 h-24 rounded-2xl object-cover border-2" style="border-color:var(--accent)">
+        {% else %}
+        <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center">
+          <span class="text-white font-display font-bold text-4xl">{{ u.username|first|upper }}</span>
+        </div>
+        {% endif %}
+        {% endwith %}
+      </div>
+
+      <!-- Info -->
+      <div class="flex-1 text-center sm:text-left">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+          <h1 class="font-display text-2xl font-bold" style="color:var(--text)">
+            {% if profile.user.get_full_name %}{{ profile.user.get_full_name }}{% else %}{{ profile.user.username }}{% endif %}
+          </h1>
+          <span class="text-sm" style="color:var(--text-soft)">@{{ profile.user.username }}</span>
+          {% if not profile.is_public %}
+          <span class="text-xs px-2 py-0.5 rounded-full" style="background:var(--surface2);color:var(--text-soft)">🔒 Privado</span>
+          {% endif %}
+        </div>
+
+        {% if profile.location %}
+        <p class="text-sm mb-1" style="color:var(--text-soft)">📍 {{ profile.location }}</p>
+        {% endif %}
+        {% if profile.favorite_genre %}
+        <p class="text-sm mb-2" style="color:var(--text-soft)">🎯 Gênero favorito: <strong style="color:var(--text)">{{ profile.favorite_genre }}</strong></p>
+        {% endif %}
+        {% if profile.bio %}
+        <p class="text-sm leading-relaxed" style="color:var(--text2)">{{ profile.bio }}</p>
+        {% endif %}
+
+        <!-- Seguindo / seguidores -->
+        <div class="flex items-center justify-center sm:justify-start gap-4 mt-3 text-sm">
+          <span style="color:var(--text)"><strong>{{ following_count }}</strong> <span style="color:var(--text-soft)">seguindo</span></span>
+          <span style="color:var(--text)"><strong>{{ followers_count }}</strong> <span style="color:var(--text-soft)">seguidores</span></span>
+        </div>
+      </div>
+
+      <!-- Ações -->
+      <div class="flex-shrink-0 flex flex-col gap-2">
+        {% if is_own %}
+        <button onclick="toggleEdit()" class="bg-violet-700 hover:bg-violet-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">
+          ✏️ Editar Perfil
+        </button>
+        <a href="{% url 'friends_list' %}" class="text-center px-4 py-2 rounded-xl text-sm font-semibold transition" style="background:var(--surface2);color:var(--text2)">
+          👥 Amigos
+        </a>
+        {% else %}
+        {% if friendship %}
+          {% if friendship.status == 'accepted' %}
+          <a href="{% url 'compare_with' target_user.username %}" class="bg-violet-700 hover:bg-violet-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition text-center">
+            ⚔️ Comparar
+          </a>
+          <form method="post" action="{% url 'remove_friend' target_user.username %}">{% csrf_token %}
+            <button type="submit" class="w-full px-4 py-2 rounded-xl text-sm font-semibold transition" style="background:var(--surface2);color:var(--text-soft)">Remover amigo</button>
+          </form>
+          {% elif friendship.status == 'pending' %}
+          <span class="px-4 py-2 rounded-xl text-sm font-semibold" style="background:var(--surface2);color:var(--text-soft)">⏳ Solicitação enviada</span>
+          {% endif %}
+        {% else %}
+        <form method="post" action="{% url 'send_friend_request' target_user.username %}">{% csrf_token %}
+          <button type="submit" class="w-full bg-violet-700 hover:bg-violet-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">
+            + Adicionar amigo
+          </button>
+        </form>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Formulário de edição (oculto por padrão) -->
+    {% if is_own %}
+    <div id="edit-form" class="hidden mt-6 pt-6 border-t" style="border-color:var(--border)">
+      <h2 class="font-display font-semibold text-sm mb-4" style="color:var(--text)">Editar Perfil</h2>
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Nome</label>
+            {{ form.first_name }}
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Sobrenome</label>
+            {{ form.last_name }}
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Bio</label>
+          {{ form.bio }}
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Localização</label>
+            {{ form.location }}
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Gênero Favorito</label>
+            {{ form.favorite_genre }}
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">URL do Avatar</label>
+          {{ form.avatar_url }}
+        </div>
+        <div class="flex items-center gap-2">
+          {{ form.is_public }}
+          <label class="text-sm" style="color:var(--text2)">Perfil público (visível para outros usuários)</label>
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="bg-violet-700 hover:bg-violet-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition">Salvar</button>
+          <button type="button" onclick="toggleEdit()" class="px-5 py-2.5 rounded-xl text-sm font-semibold transition" style="background:var(--surface2);color:var(--text-soft)">Cancelar</button>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-5">
+    {% with s=stats %}
+    <div class="card p-3 text-center"><div class="font-display font-bold text-lg" style="color:#a78bfa">{{ s.total }}</div><div class="text-xs mt-0.5" style="color:var(--text-soft)">Total</div></div>
+    <div class="card p-3 text-center"><div class="font-display font-bold text-lg text-blue-500">{{ s.completed }}</div><div class="text-xs mt-0.5" style="color:var(--text-soft)">Zerados</div></div>
+    <div class="card p-3 text-center"><div class="font-display font-bold text-lg text-emerald-500">{{ s.playing }}</div><div class="text-xs mt-0.5" style="color:var(--text-soft)">Jogando</div></div>
+    <div class="card p-3 text-center"><div class="font-display font-bold text-lg text-purple-500">{{ s.wishlist }}</div><div class="text-xs mt-0.5" style="color:var(--text-soft)">Wishlist</div></div>
+    <div class="card p-3 text-center"><div class="font-display font-bold text-lg text-amber-500">{{ s.avg_rating|default:"—" }}</div><div class="text-xs mt-0.5" style="color:var(--text-soft)">Nota Média</div></div>
+    <div class="card p-3 text-center"><div class="font-display font-bold text-lg text-cyan-500">{{ s.total_hours }}h</div><div class="text-xs mt-0.5" style="color:var(--text-soft)">Horas</div></div>
+    {% endwith %}
+  </div>
+
+  <!-- Jogos favoritos fixados -->
+  {% if favorited %}
+  <div class="card p-5 mb-5">
+    <h2 class="font-display font-semibold text-sm mb-4" style="color:var(--text)">⭐ Jogos Favoritos</h2>
+    <div class="grid grid-cols-3 sm:grid-cols-6 gap-3">
+      {% for fav in favorited %}
+      <a href="{% url 'game_detail' fav.game.pk %}" class="block rounded-xl overflow-hidden card-hover-lift border" style="border-color:var(--border)">
+        {% if fav.game.cover_url %}
+        <img src="{{ fav.game.cover_url }}" alt="{{ fav.game.title }}" class="w-full object-cover" style="aspect-ratio:3/4">
+        {% else %}
+        <div class="flex items-center justify-center text-3xl" style="aspect-ratio:3/4;background:var(--surface2)">🎮</div>
+        {% endif %}
+        <div class="p-1.5"><p class="text-xs font-medium truncate" style="color:var(--text)">{{ fav.game.title }}</p></div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Solicitações pendentes (só no perfil próprio) -->
+  {% if is_own and pending_requests %}
+  <div class="card p-5 mb-5">
+    <h2 class="font-display font-semibold text-sm mb-4" style="color:var(--text)">🔔 Solicitações Pendentes</h2>
+    <div class="space-y-2">
+      {% for req in pending_requests %}
+      <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--surface2)">
+        <a href="{% url 'user_profile' req.from_user.username %}" class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center">
+            <span class="text-white text-xs font-bold">{{ req.from_user.username|first|upper }}</span>
+          </div>
+          <span class="text-sm font-medium" style="color:var(--text)">{{ req.from_user.username }}</span>
+        </a>
+        <div class="flex gap-2">
+          <form method="post" action="{% url 'accept_friend' req.from_user.username %}">{% csrf_token %}
+            <button type="submit" class="bg-violet-700 hover:bg-violet-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">Aceitar</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Biblioteca do outro usuário -->
+  {% if not is_own and their_games %}
+  <div class="card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-display font-semibold text-sm" style="color:var(--text)">🎮 Biblioteca de {{ target_user.username }}</h2>
+      {% if friendship.status == 'accepted' %}
+      <a href="{% url 'compare_with' target_user.username %}" class="text-xs font-semibold text-violet-500 hover:underline">⚔️ Comparar →</a>
+      {% endif %}
+    </div>
+    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+      {% for game in their_games|slice:":12" %}
+      <div class="rounded-xl overflow-hidden border" style="border-color:var(--border)">
+        {% if game.cover_url %}
+        <img src="{{ game.cover_url }}" alt="{{ game.title }}" class="w-full object-cover" style="aspect-ratio:3/4" loading="lazy">
+        {% else %}
+        <div class="flex items-center justify-center text-2xl" style="aspect-ratio:3/4;background:var(--surface2)">🎮</div>
+        {% endif %}
+        <div class="p-1"><p class="text-xs truncate" style="color:var(--text)">{{ game.title }}</p></div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if their_games.count > 12 %}
+    <p class="text-xs mt-3 text-center" style="color:var(--text-soft)">+{{ their_games.count|add:"-12" }} jogos</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function toggleEdit() {
+  document.getElementById('edit-form').classList.toggle('hidden');
+}
+</script>
+{% endblock %}

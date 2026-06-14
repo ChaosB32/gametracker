@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — GameTracker{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="font-display text-2xl sm:text-3xl font-bold glow-text" style="color:var(--text)">
+      Olá, {{ user.username }} <span class="float inline-block">🎮</span>
+    </h1>
+    <p class="text-sm mt-1" style="color:var(--text-soft)">Sua jornada gamer em números</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+    {% for stat in stats_list %}{% endfor %}
+
+    <div class="card card-hover-lift p-4 rounded-xl" style="background:var(--surface)">
+      <div class="text-2xl font-display font-bold" style="color:#a78bfa">{{ total }}</div>
+      <div class="text-xs mt-1" style="color:var(--text-soft)">Total</div>
+      <div class="text-xl mt-1">🎮</div>
+    </div>
+    <div class="card card-hover-lift p-4 rounded-xl">
+      <div class="text-2xl font-display font-bold text-blue-500">{{ completed }}</div>
+      <div class="text-xs mt-1" style="color:var(--text-soft)">Zerados</div>
+      <div class="text-xl mt-1">✅</div>
+    </div>
+    <div class="card card-hover-lift p-4 rounded-xl">
+      <div class="text-2xl font-display font-bold text-emerald-500">{{ playing }}</div>
+      <div class="text-xs mt-1" style="color:var(--text-soft)">Jogando</div>
+      <div class="text-xl mt-1">▶️</div>
+    </div>
+    <div class="card card-hover-lift p-4 rounded-xl">
+      <div class="text-2xl font-display font-bold text-amber-500">{{ avg_rating|default:"—" }}</div>
+      <div class="text-xs mt-1" style="color:var(--text-soft)">Nota Média</div>
+      <div class="text-xl mt-1">⭐</div>
+    </div>
+    <div class="card card-hover-lift p-4 rounded-xl col-span-2 sm:col-span-1">
+      <div class="text-2xl font-display font-bold text-cyan-500">{{ total_hours }}h</div>
+      <div class="text-xs mt-1" style="color:var(--text-soft)">Horas Jogadas</div>
+      <div class="text-xl mt-1">⏱️</div>
+    </div>
+  </div>
+
+  {% if total == 0 %}
+  <div class="card text-center py-20 px-6">
+    <div class="text-5xl mb-4 float inline-block">🎮</div>
+    <h2 class="font-display text-xl font-bold mb-2" style="color:var(--text)">Biblioteca vazia</h2>
+    <p class="text-sm mb-6" style="color:var(--text-soft)">Adicione seu primeiro jogo para começar!</p>
+    <a href="{% url 'game_create' %}" class="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 text-white px-6 py-3 rounded-xl font-semibold text-sm transition">
+      + Adicionar Jogo
+    </a>
+  </div>
+  {% else %}
+
+  <!-- Charts row -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <div class="card p-5">
+      <h2 class="font-display font-semibold text-sm mb-3" style="color:var(--text)">Por Status</h2>
+      <div style="height:180px;position:relative"><canvas id="statusChart"></canvas></div>
+    </div>
+    <div class="card p-5">
+      <h2 class="font-display font-semibold text-sm mb-3" style="color:var(--text)">Por Plataforma</h2>
+      <div style="height:180px;position:relative"><canvas id="platformChart"></canvas></div>
+    </div>
+    <div class="card p-5 sm:col-span-2 lg:col-span-1">
+      <h2 class="font-display font-semibold text-sm mb-3" style="color:var(--text)">Gêneros Favoritos</h2>
+      <div class="space-y-2">
+        {% for genre, count in top_genres %}
+        <div>
+          <div class="flex justify-between text-xs mb-1" style="color:var(--text2)">
+            <span>{{ genre }}</span><span class="font-bold" style="color:#7c3aed">{{ count }}</span>
+          </div>
+          <div class="h-1.5 rounded-full overflow-hidden" style="background:var(--border)">
+            <div class="h-full rounded-full bg-gradient-to-r from-violet-600 to-cyan-500" style="width:{% widthratio count top_genres.0.1 100 %}%"></div>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-xs" style="color:var(--text-soft)">Nenhum gênero cadastrado</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Amigos jogando agora -->
+  {% if friends_playing %}
+  <div class="card p-5 mb-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-display font-semibold text-sm" style="color:var(--text)">🟢 Amigos Jogando Agora</h2>
+      <a href="{% url 'friends_list' %}" class="text-xs hover:underline" style="color:#7c3aed">Ver amigos →</a>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      {% for game in friends_playing %}
+      <a href="{% url 'user_profile' game.user.username %}" class="flex items-center gap-2 px-3 py-2 rounded-xl transition hover:opacity-80" style="background:var(--surface2)">
+        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+          <span class="text-white text-xs font-bold">{{ game.user.username|first|upper }}</span>
+        </div>
+        <div>
+          <div class="text-xs font-semibold" style="color:var(--text)">{{ game.user.username }}</div>
+          <div class="text-xs" style="color:var(--text-soft)">{{ game.title|truncatechars:20 }}</div>
+        </div>
+        {% if game.cover_url %}
+        <img src="{{ game.cover_url }}" alt="{{ game.title }}" class="w-8 h-10 object-cover rounded-md ml-1">
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Games rows -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Recentes -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display font-semibold text-sm" style="color:var(--text)">Adicionados Recentemente</h2>
+        <a href="{% url 'game_list' %}" class="text-xs hover:underline" style="color:#7c3aed">Ver tudo →</a>
+      </div>
+      <div class="space-y-2">
+        {% for game in recent_games %}
+        <a href="{% url 'game_detail' game.pk %}" class="flex items-center gap-3 p-2.5 rounded-xl transition hover:scale-[1.01]" style="background:var(--surface2)">
+          {% if game.cover_url %}
+          <img src="{{ game.cover_url }}" alt="{{ game.title }}" class="w-10 h-14 object-cover rounded-lg flex-shrink-0">
+          {% else %}
+          <div class="w-10 h-14 rounded-lg flex items-center justify-center text-2xl flex-shrink-0" style="background:var(--border)">🎮</div>
+          {% endif %}
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-xs truncate" style="color:var(--text)">{{ game.title }}</div>
+            <div class="text-xs mt-0.5" style="color:var(--text-soft)">{{ game.platform.name|default:"—" }}</div>
+            <span class="status-pill mt-1
+              {% if game.status == 'completed' %}bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300
+              {% elif game.status == 'playing' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300
+              {% elif game.status == 'abandoned' %}bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300
+              {% elif game.status == 'queued' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300
+              {% elif game.status == 'wishlist' %}bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300
+              {% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300{% endif %}">
+              {{ game.get_status_display }}
+            </span>
+          </div>
+          {% if game.rating %}<div class="rating-badge px-2 py-1 text-xs flex-shrink-0">{{ game.rating }}</div>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Top Rated -->
+    <div class="card p-5">
+      <h2 class="font-display font-semibold text-sm mb-4" style="color:var(--text)">⭐ Melhor Avaliados</h2>
+      <div class="space-y-2">
+        {% for game in top_games %}
+        <a href="{% url 'game_detail' game.pk %}" class="flex items-center gap-3 p-2.5 rounded-xl transition hover:scale-[1.01]" style="background:var(--surface2)">
+          <div class="font-display font-bold text-xl w-7 text-center flex-shrink-0" style="color:var(--border2)">{{ forloop.counter }}</div>
+          {% if game.cover_url %}
+          <img src="{{ game.cover_url }}" alt="{{ game.title }}" class="w-8 h-12 object-cover rounded-lg flex-shrink-0">
+          {% else %}
+          <div class="w-8 h-12 rounded-lg flex items-center justify-center text-xl flex-shrink-0" style="background:var(--border)">🎮</div>
+          {% endif %}
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-xs truncate" style="color:var(--text)">{{ game.title }}</div>
+            <div class="flex gap-0.5 mt-1">
+              {% for i in "12345" %}
+              <span class="text-xs {% if forloop.counter <= game.rating_stars %}text-amber-400{% else %}text-gray-300 dark:text-gray-700{% endif %}">★</span>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="rating-badge px-2 py-1 text-xs flex-shrink-0">{{ game.rating }}</div>
+        </a>
+        {% empty %}
+        <p class="text-xs" style="color:var(--text-soft)">Avalie seus jogos para ver o ranking!</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const isDark = () => document.getElementById('html-root').classList.contains('dark');
+const textColor = () => isDark() ? '#9ca3af' : '#4b5563';
+const gridColor = () => isDark() ? '#1f2937' : '#e5e7eb';
+const colors = ['#7c3aed','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6','#3b82f6'];
+
+const statusData = {{ status_data|safe }};
+const platformData = {{ platform_stats|safe }};
+
+let statusChart, platformChart;
+
+function buildCharts() {
+  const tc = textColor(), gc = gridColor();
+  if (statusChart) statusChart.destroy();
+  if (platformChart) platformChart.destroy();
+
+  if (statusData.length) {
+    statusChart = new Chart(document.getElementById('statusChart'), {
+      type: 'doughnut',
+      data: { labels: statusData.map(s=>s.label), datasets: [{ data: statusData.map(s=>s.count), backgroundColor: colors, borderWidth: 0 }] },
+      options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins: { legend: { position:'bottom', labels:{ color:tc, font:{size:10}, boxWidth:10, padding:8 } } } }
+    });
+  }
+  if (platformData.length) {
+    platformChart = new Chart(document.getElementById('platformChart'), {
+      type: 'bar',
+      data: { labels: platformData.map(p=>p.platform__name), datasets: [{ data: platformData.map(p=>p.count), backgroundColor: colors, borderRadius:4, borderWidth:0 }] },
+      options: { responsive:true, maintainAspectRatio:false, indexAxis:'y', plugins:{ legend:{display:false} }, scales:{ x:{ grid:{color:gc}, ticks:{color:tc, font:{size:10}} }, y:{ grid:{display:false}, ticks:{color:tc, font:{size:10}} } } }
+    });
+  }
+}
+
+buildCharts();
+
+// Rebuild charts on theme change
+const observer = new MutationObserver(() => buildCharts());
+observer.observe(document.getElementById('html-root'), { attributes: true, attributeFilter: ['class'] });
+</script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Amigos — GameTracker{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+
+  <div class="flex items-center justify-between mb-5">
+    <h1 class="font-display text-2xl font-bold" style="color:var(--text)">👥 Amigos</h1>
+    <a href="{% url 'my_profile' %}" class="text-xs px-3 py-1.5 rounded-xl border transition" style="border-color:var(--border);color:var(--text-soft)">← Meu Perfil</a>
+  </div>
+
+  <!-- Buscar usuário -->
+  <div class="card p-5 mb-5">
+    <h2 class="font-display font-semibold text-sm mb-3" style="color:var(--text)">🔍 Buscar jogadores</h2>
+    <form method="get" class="flex gap-2">
+      <input type="text" name="q" value="{{ search }}" placeholder="Digite o nome de usuário..."
+        class="flex-1 rounded-xl px-4 py-2.5 text-sm border focus:outline-none focus:border-violet-500 transition"
+        style="background:var(--input-bg);color:var(--text);border-color:var(--border)"/>
+      <button type="submit" class="bg-violet-700 hover:bg-violet-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition">Buscar</button>
+    </form>
+
+    {% if search_results %}
+    <div class="mt-4 space-y-2">
+      {% for user in search_results %}
+      <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--surface2)">
+        <a href="{% url 'user_profile' user.username %}" class="flex items-center gap-2 hover:opacity-80 transition">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center flex-shrink-0">
+            <span class="text-white text-sm font-bold">{{ user.username|first|upper }}</span>
+          </div>
+          <div>
+            <div class="font-semibold text-sm" style="color:var(--text)">{{ user.username }}</div>
+            {% if user.profile.location %}<div class="text-xs" style="color:var(--text-soft)">📍 {{ user.profile.location }}</div>{% endif %}
+          </div>
+        </a>
+        <form method="post" action="{% url 'send_friend_request' user.username %}">{% csrf_token %}
+          <button type="submit" class="bg-violet-700 hover:bg-violet-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">+ Adicionar</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% elif search %}
+    <p class="text-sm mt-3" style="color:var(--text-soft)">Nenhum usuário encontrado para "{{ search }}".</p>
+    {% endif %}
+  </div>
+
+  <!-- Solicitações recebidas -->
+  {% if pending_received %}
+  <div class="card p-5 mb-5">
+    <h2 class="font-display font-semibold text-sm mb-3 flex items-center gap-2" style="color:var(--text)">
+      🔔 Solicitações recebidas
+      <span class="text-xs px-2 py-0.5 rounded-full bg-violet-700 text-white">{{ pending_received.count }}</span>
+    </h2>
+    <div class="space-y-2">
+      {% for req in pending_received %}
+      <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--surface2)">
+        <a href="{% url 'user_profile' req.from_user.username %}" class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center">
+            <span class="text-white text-sm font-bold">{{ req.from_user.username|first|upper }}</span>
+          </div>
+          <span class="font-semibold text-sm" style="color:var(--text)">{{ req.from_user.username }}</span>
+        </a>
+        <form method="post" action="{% url 'accept_friend' req.from_user.username %}">{% csrf_token %}
+          <button type="submit" class="bg-violet-700 hover:bg-violet-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">✓ Aceitar</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Solicitações enviadas -->
+  {% if pending_sent %}
+  <div class="card p-5 mb-5">
+    <h2 class="font-display font-semibold text-sm mb-3" style="color:var(--text)">⏳ Solicitações enviadas</h2>
+    <div class="space-y-2">
+      {% for req in pending_sent %}
+      <div class="flex items-center gap-3 p-3 rounded-xl" style="background:var(--surface2)">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center">
+          <span class="text-white text-sm font-bold">{{ req.to_user.username|first|upper }}</span>
+        </div>
+        <span class="text-sm" style="color:var(--text)">{{ req.to_user.username }}</span>
+        <span class="ml-auto text-xs" style="color:var(--text-soft)">Aguardando resposta...</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Lista de amigos -->
+  <div class="card p-5">
+    <h2 class="font-display font-semibold text-sm mb-4" style="color:var(--text)">
+      🎮 Meus Amigos <span class="text-xs ml-1" style="color:var(--text-soft)">({{ friends.count }})</span>
+    </h2>
+    {% if friends %}
+    <div class="space-y-2">
+      {% for f in friends %}
+      <div class="flex items-center justify-between p-3 rounded-xl transition" style="background:var(--surface2)">
+        <a href="{% url 'user_profile' f.to_user.username %}" class="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition">
+          {% if f.to_user.profile.avatar_url %}
+          <img src="{{ f.to_user.profile.avatar_url }}" alt="{{ f.to_user.username }}" class="w-10 h-10 rounded-full object-cover flex-shrink-0">
+          {% else %}
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center flex-shrink-0">
+            <span class="text-white font-bold">{{ f.to_user.username|first|upper }}</span>
+          </div>
+          {% endif %}
+          <div class="min-w-0">
+            <div class="font-semibold text-sm truncate" style="color:var(--text)">{{ f.to_user.username }}</div>
+            {% with stats=f.to_user.profile.get_stats %}
+            <div class="text-xs" style="color:var(--text-soft)">{{ stats.total }} jogos · {{ stats.completed }} zerados</div>
+            {% endwith %}
+          </div>
+        </a>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <a href="{% url 'compare_with' f.to_user.username %}" class="text-xs px-3 py-1.5 rounded-lg font-semibold transition" style="background:var(--surface);border:1px solid var(--border);color:var(--text2)">
+            ⚔️ Comparar
+          </a>
+          <form method="post" action="{% url 'remove_friend' f.to_user.username %}">{% csrf_token %}
+            <button type="submit" class="text-xs px-2 py-1.5 rounded-lg transition hover:text-red-400" style="color:var(--text-soft)" title="Remover amigo">✕</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-10">
+      <div class="text-4xl mb-3">👥</div>
+      <p class="text-sm" style="color:var(--text-soft)">Você ainda não tem amigos. Busque um jogador acima!</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

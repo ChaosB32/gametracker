@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} — GameTracker{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 py-6">
+
+  <div class="mb-5">
+    <a href="{% url 'game_list' %}" class="text-xs hover:text-violet-500 transition mb-2 inline-block" style="color:var(--text-soft)">← Voltar</a>
+    <h1 class="font-display text-2xl font-bold" style="color:var(--text)">{{ action }}</h1>
+  </div>
+
+  <form method="post" id="game-form" class="space-y-5">
+    {% csrf_token %}
+    <input type="hidden" name="rawg_id" id="rawg_id_input"/>
+
+    <!-- RAWG Autocomplete -->
+    <div class="card p-5">
+      <h2 class="font-display font-semibold text-sm mb-1" style="color:var(--text)">🔍 Buscar automaticamente <span class="text-xs font-normal" style="color:var(--text-soft)">(RAWG)</span></h2>
+      <p class="text-xs mb-3" style="color:var(--text-soft)">Digite o nome para importar capa, gênero e metadados</p>
+      <div class="relative">
+        <input type="text" id="rawg-search-input" placeholder="Ex: Elden Ring, God of War..."
+          class="w-full rounded-xl px-4 py-3 text-sm border focus:outline-none focus:border-violet-500 transition"
+          style="background:var(--input-bg);color:var(--text);border-color:var(--border)" autocomplete="off"/>
+        <div id="search-spinner" class="hidden absolute right-4 top-1/2 -translate-y-1/2 text-violet-500 text-sm animate-spin">⏳</div>
+      </div>
+      <div id="rawg-results" class="hidden mt-2 rounded-xl border overflow-hidden divide-y max-h-72 overflow-y-auto"
+           style="border-color:var(--border);background:var(--surface)"></div>
+      <div id="selected-preview" class="hidden mt-3 flex items-center gap-3 p-3 rounded-xl border"
+           style="background:var(--surface2);border-color:var(--border)">
+        <img id="preview-img" src="" alt="" class="w-12 h-16 object-cover rounded-lg flex-shrink-0"/>
+        <div>
+          <div id="preview-title" class="font-semibold text-sm" style="color:var(--text)"></div>
+          <div id="preview-meta" class="text-xs mt-0.5" style="color:var(--text-soft)"></div>
+          <div class="text-xs text-violet-500 mt-1">✅ Metadados importados</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main fields -->
+    <div class="card p-5 space-y-4">
+      <h2 class="font-display font-semibold text-sm" style="color:var(--text)">Informações Principais</h2>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Título *</label>
+        {{ form.title }}
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Plataforma</label>
+          {{ form.platform }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Status</label>
+          {{ form.status }}
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Nota (0–10)</label>
+          {{ form.rating }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Horas Jogadas</label>
+          {{ form.hours_played }}
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Início</label>
+          {{ form.start_date }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Conclusão</label>
+          {{ form.end_date }}
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Minha Review</label>
+        {{ form.review }}
+      </div>
+    </div>
+
+    <!-- Metadata (collapsible) -->
+    <div class="card p-5">
+      <button type="button" onclick="this.nextElementSibling.classList.toggle('hidden')"
+        class="w-full flex items-center justify-between text-sm font-semibold font-display focus:outline-none" style="color:var(--text)">
+        📋 Metadados
+        <span style="color:var(--text-soft)">▼</span>
+      </button>
+      <div class="hidden mt-4 space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Gênero</label>{{ form.genre }}</div>
+          <div><label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Desenvolvedor</label>{{ form.developer }}</div>
+        </div>
+        <div><label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Ano</label>{{ form.release_year }}</div>
+        <div><label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">URL da Capa</label>{{ form.cover_url }}</div>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="card p-5">
+      <h2 class="font-display font-semibold text-sm mb-3" style="color:var(--text)">🏷️ Tags</h2>
+      <div class="flex flex-wrap gap-2">
+        {% for checkbox in form.tags %}
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" name="{{ checkbox.data.name }}" value="{{ checkbox.data.value }}"
+            {% if checkbox.data.selected %}checked{% endif %}
+            class="hidden peer"/>
+          <span class="px-3 py-1.5 rounded-full border text-xs font-medium transition cursor-pointer
+            peer-checked:bg-violet-600 peer-checked:border-violet-600 peer-checked:text-white"
+            style="border-color:var(--border);color:var(--text2);background:var(--surface2)">
+            {{ checkbox.choice_label }}
+          </span>
+        </label>
+        {% empty %}
+        <p class="text-xs" style="color:var(--text-soft)">Nenhuma tag. <a href="/admin/games/tag/add/" target="_blank" class="text-violet-500 hover:underline">Criar no admin</a></p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Errors -->
+    {% if form.errors %}
+    <div class="p-4 rounded-xl border border-red-400" style="background:#fee2e2;color:#991b1b">
+      {% for field, errors in form.errors.items %}{% for error in errors %}
+      <p class="text-xs">⚠️ {{ field }}: {{ error }}</p>
+      {% endfor %}{% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Submit -->
+    <div class="flex gap-3 pb-2">
+      <button type="submit" class="flex-1 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 text-white py-3 rounded-xl font-semibold text-sm transition shadow">
+        {{ action }}
+      </button>
+      <a href="{% url 'game_list' %}" class="px-5 py-3 rounded-xl font-semibold text-sm transition" style="background:var(--surface2);color:var(--text-soft)">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+let searchTimeout;
+
+document.getElementById('rawg-search-input').addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const q = this.value.trim();
+  if (q.length < 2) { document.getElementById('rawg-results').classList.add('hidden'); return; }
+  document.getElementById('search-spinner').classList.remove('hidden');
+  searchTimeout = setTimeout(() => doSearch(q), 400);
+});
+
+async function doSearch(q) {
+  const el = document.getElementById('rawg-results');
+  try {
+    const r = await fetch(`/api/rawg/search/?q=${encodeURIComponent(q)}`);
+    const data = await r.json();
+    document.getElementById('search-spinner').classList.add('hidden');
+    if (!data.results?.length) {
+      el.innerHTML = `<div class="p-3 text-xs" style="color:var(--text-soft)">Nenhum resultado. Preencha manualmente.</div>`;
+    } else {
+      el.innerHTML = data.results.map(g => `
+        <button type="button" onclick='pick(${JSON.stringify(g)})'
+          class="w-full flex items-center gap-3 p-3 text-left transition hover:opacity-80" style="background:var(--surface)">
+          <img src="${g.cover_url||''}" alt="" class="w-8 h-12 object-cover rounded-lg flex-shrink-0" style="background:var(--border)" onerror="this.style.display='none'">
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-xs truncate" style="color:var(--text)">${g.title}</div>
+            <div class="text-xs mt-0.5" style="color:var(--text-soft)">${g.release_year||''} ${g.genre?'· '+g.genre:''}</div>
+          </div>
+          ${g.metacritic_score?`<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">${g.metacritic_score}</span>`:''}
+        </button>`).join('');
+    }
+    el.classList.remove('hidden');
+  } catch {
+    document.getElementById('search-spinner').classList.add('hidden');
+    el.innerHTML = `<div class="p-3 text-xs text-red-500">Erro. Verifique RAWG_API_KEY.</div>`;
+    el.classList.remove('hidden');
+  }
+}
+
+function pick(g) {
+  document.getElementById('id_title').value = g.title || '';
+  document.getElementById('rawg_id_input').value = g.rawg_id || '';
+  const coverEl = document.getElementById('id_cover_url');
+  if (coverEl) coverEl.value = g.cover_url || '';
+  const genreEl = document.getElementById('id_genre');
+  if (genreEl) genreEl.value = g.genre || '';
+  const yearEl = document.getElementById('id_release_year');
+  if (yearEl) yearEl.value = g.release_year || '';
+
+  document.getElementById('preview-img').src = g.cover_url || '';
+  document.getElementById('preview-title').textContent = g.title;
+  document.getElementById('preview-meta').textContent = [g.release_year, g.genre, g.platforms?.slice(0,2).join('/')].filter(Boolean).join(' · ');
+  document.getElementById('selected-preview').classList.remove('hidden');
+  document.getElementById('rawg-results').classList.add('hidden');
+  document.getElementById('rawg-search-input').value = '';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#rawg-search-input') && !e.target.closest('#rawg-results'))
+    document.getElementById('rawg-results').classList.add('hidden');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Biblioteca — GameTracker{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h1 class="font-display text-2xl sm:text-3xl font-bold" style="color:var(--text)">Biblioteca</h1>
+      <p class="text-xs mt-1" style="color:var(--text-soft)">{{ games.count }} jogo{{ games.count|pluralize:"s" }}</p>
+    </div>
+    <a href="{% url 'game_create' %}" class="hidden sm:flex items-center gap-1 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">
+      + Adicionar
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="card p-4 mb-5">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+      <input type="text" name="q" value="{{ current_filters.q|default:'' }}"
+        placeholder="🔍 Buscar..." class="col-span-2 sm:col-span-1 w-full rounded-xl px-3 py-2 text-sm border transition focus:outline-none"
+        style="background:var(--input-bg);color:var(--text);border-color:var(--border)"/>
+
+      <select name="status" class="rounded-xl px-3 py-2 text-sm border transition focus:outline-none"
+        style="background:var(--input-bg);color:var(--text);border-color:var(--border)">
+        <option value="">Todos status</option>
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="platform" class="rounded-xl px-3 py-2 text-sm border transition focus:outline-none"
+        style="background:var(--input-bg);color:var(--text);border-color:var(--border)">
+        <option value="">Plataformas</option>
+        {% for p in platforms %}
+        <option value="{{ p.id }}" {% if current_filters.platform == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="sort" class="rounded-xl px-3 py-2 text-sm border transition focus:outline-none"
+        style="background:var(--input-bg);color:var(--text);border-color:var(--border)">
+        <option value="-updated_at" {% if current_filters.sort == '-updated_at' %}selected{% endif %}>Recentes</option>
+        <option value="-rating" {% if current_filters.sort == '-rating' %}selected{% endif %}>Melhor Nota</option>
+        <option value="title" {% if current_filters.sort == 'title' %}selected{% endif %}>A-Z</option>
+        <option value="-hours_played" {% if current_filters.sort == '-hours_played' %}selected{% endif %}>Mais Jogados</option>
+      </select>
+
+      <div class="flex gap-2">
+        <button type="submit" class="flex-1 bg-violet-700 hover:bg-violet-600 text-white rounded-xl px-3 py-2 text-sm font-semibold transition">Filtrar</button>
+        <a href="{% url 'game_list' %}" class="px-3 py-2 rounded-xl text-sm transition" style="background:var(--surface2);color:var(--text-soft)">✕</a>
+      </div>
+    </div>
+  </form>
+
+  <!-- Game Grid -->
+  {% if games %}
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+    {% for game in games %}
+    <a href="{% url 'game_detail' game.pk %}" class="card card-hover-lift block rounded-xl overflow-hidden group">
+      <div class="relative" style="aspect-ratio:3/4;background:var(--surface2)">
+        {% if game.cover_url %}
+        <img src="{{ game.cover_url }}" alt="{{ game.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+        {% else %}
+        <div class="w-full h-full flex items-center justify-center text-4xl">🎮</div>
+        {% endif %}
+        {% if game.rating %}
+        <div class="absolute top-2 right-2 rating-badge px-1.5 py-0.5 text-xs">{{ game.rating }}</div>
+        {% endif %}
+        <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+          <span class="text-xs font-semibold
+            {% if game.status == 'completed' %}text-blue-300
+            {% elif game.status == 'playing' %}text-emerald-300
+            {% elif game.status == 'abandoned' %}text-red-300
+            {% elif game.status == 'queued' %}text-yellow-300
+            {% elif game.status == 'wishlist' %}text-purple-300
+            {% else %}text-gray-300{% endif %}">
+            {{ game.get_status_display }}
+          </span>
+        </div>
+      </div>
+      <div class="p-2">
+        <div class="font-semibold text-xs leading-snug line-clamp-2" style="color:var(--text)">{{ game.title }}</div>
+        <div class="text-xs mt-0.5" style="color:var(--text-soft)">{{ game.platform.name|default:"—" }}</div>
+        {% if game.hours_played %}<div class="text-xs text-cyan-500 mt-0.5">⏱ {{ game.hours_played }}h</div>{% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card text-center py-20 px-6">
+    <div class="text-5xl mb-4">🔍</div>
+    <h2 class="font-display text-xl font-bold mb-2" style="color:var(--text)">Nenhum jogo encontrado</h2>
+    <p class="text-sm mb-6" style="color:var(--text-soft)">Ajuste os filtros ou adicione um novo jogo</p>
+    <a href="{% url 'game_create' %}" class="inline-flex items-center gap-2 bg-violet-700 hover:bg-violet-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition">+ Adicionar Jogo</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

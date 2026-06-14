@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Criar Conta — GameTracker{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4 py-10">
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-6">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center pulse-glow mb-3">
+        <span class="text-white font-display font-bold text-xl">GT</span>
+      </div>
+      <h1 class="font-display text-2xl font-bold glow-text" style="color:var(--text)">GameTracker</h1>
+      <p class="text-sm mt-1" style="color:var(--text-soft)">Crie sua conta e comece a rastrear</p>
+    </div>
+    <div class="card p-6">
+      <h2 class="font-display font-bold text-lg mb-4" style="color:var(--text)">Criar Conta</h2>
+      <form method="post" class="space-y-3">
+        {% csrf_token %}
+        {% for field in form %}
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}{% for e in field.errors %}<p class="text-red-500 text-xs mt-1">{{ e }}</p>{% endfor %}{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="w-full bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 text-white py-3 rounded-xl font-semibold text-sm transition mt-1">
+          Criar Conta
+        </button>
+      </form>
+      <p class="text-center text-xs mt-4" style="color:var(--text-soft)">
+        Já tem conta? <a href="{% url 'login' %}" class="text-violet-500 hover:underline">Entrar</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

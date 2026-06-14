@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Login — GameTracker{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4 py-10">
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-6">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center pulse-glow mb-3">
+        <span class="text-white font-display font-bold text-xl">GT</span>
+      </div>
+      <h1 class="font-display text-2xl font-bold glow-text" style="color:var(--text)">GameTracker</h1>
+      <p class="text-sm mt-1" style="color:var(--text-soft)">Sua biblioteca de games</p>
+    </div>
+    <div class="card p-6">
+      <h2 class="font-display font-bold text-lg mb-4" style="color:var(--text)">Entrar</h2>
+      {% if form.errors %}
+      <div class="p-3 rounded-xl border border-red-400 bg-red-50 dark:bg-red-900/30 mb-4">
+        <p class="text-red-600 dark:text-red-300 text-xs">Usuário ou senha incorretos.</p>
+      </div>
+      {% endif %}
+
+      <!-- Demo hint -->
+      <div class="p-3 rounded-xl mb-4 border" style="background:var(--surface2);border-color:var(--border)">
+        <p class="text-xs font-semibold mb-1" style="color:var(--text)">🎮 Conta de teste:</p>
+        <p class="text-xs" style="color:var(--text-soft)">Usuário: <strong style="color:var(--text)">jogador</strong> &nbsp;|&nbsp; Senha: <strong style="color:var(--text)">gametracker123</strong></p>
+        <button type="button" onclick="fillDemo()" class="mt-2 text-xs text-violet-500 hover:underline">Preencher automaticamente</button>
+      </div>
+
+      <form method="post" class="space-y-3">
+        {% csrf_token %}
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Usuário</label>
+          <input type="text" name="username" id="id_login_user" autofocus required
+            class="w-full rounded-xl px-4 py-3 text-sm border focus:outline-none focus:border-violet-500 transition"
+            style="background:var(--input-bg);color:var(--text);border-color:var(--border)" placeholder="Seu usuário"/>
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--text2)">Senha</label>
+          <input type="password" name="password" id="id_login_pass" required
+            class="w-full rounded-xl px-4 py-3 text-sm border focus:outline-none focus:border-violet-500 transition"
+            style="background:var(--input-bg);color:var(--text);border-color:var(--border)" placeholder="••••••••"/>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}"/>
+        <button type="submit" class="w-full bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 text-white py-3 rounded-xl font-semibold text-sm transition mt-1">
+          Entrar
+        </button>
+      </form>
+      <p class="text-center text-xs mt-4" style="color:var(--text-soft)">
+        Não tem conta? <a href="{% url 'register' %}" class="text-violet-500 hover:underline">Criar conta</a>
+      </p>
+    </div>
+  </div>
+</div>
+<script>
+function fillDemo() {
+  document.getElementById('id_login_user').value = 'jogador';
+  document.getElementById('id_login_pass').value = 'gametracker123';
+}
+</script>
+{% endblock %}
